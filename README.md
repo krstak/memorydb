@@ -19,12 +19,12 @@ Remove   func(id, collection string) error
 
 ## Usage
 
-##### Create database
+### Create database
 ```go
 db := memorydb.Create()
 ```
 
-##### Entity to persist
+### Entity to persist
 In order to save some struct in db, it should have the required field `Id` type `string`. Everything else is optional.
 ```go
 type book struct {
@@ -35,42 +35,42 @@ type book struct {
 }
 ```
 
-##### Write to database
+### Write to database
 Important: Reference should be passed in.
 ```go
 memBook := book{isbn: "1234567", name: "In-Memory DB", author: "Marko Krstic"}
 id := db.Add(&memBook, "books")
 ```
 
-##### Find all
+### Find all
 Important: slice of interface{} is returned
 ```go
 books, err := db.FindAll("books")
 bk := books[0].(*book)
 ```
 
-##### Find by Id
+### Find by Id
 Important: interface{} is returned
 ```go
 bk, err := db.FindById(id, "books")
 b := bk.(*book)
 ```
 
-##### Find by custom field
+### Find by custom field
 Important: interface{} is returned
 ```go
 bk, err := db.FindBy("isbn", "1234567", "books")
 b := bk.(*book)
 ```
 
-##### Update
+### Update
 Important: Reference should be passed in.
 ```go
 bk := book{isbn: "222", name: "In-Memory DB", author: "Marko Krstic"}
 err := db.Update(id, &bk, "books")
 ```
 
-##### Remove
+### Remove
 ```go
 err := db.Remove(id, "books")
 ```
