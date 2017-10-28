@@ -15,10 +15,10 @@ const (
 type Manager struct {
 	Add      func(item interface{}, collection string) string
 	FindAll  func(collection string) ([]interface{}, error)
-	FindBy   func(field, value, collection string) (interface{}, error)
 	FindById func(id string, collection string) (interface{}, error)
-	Remove   func(id, collection string) error
+	FindBy   func(field, value, collection string) (interface{}, error)
 	Update   func(id string, item interface{}, collection string) error
+	Remove   func(id, collection string) error
 }
 
 type col struct {
