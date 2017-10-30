@@ -2,7 +2,6 @@ package memorydb
 
 import (
 	"errors"
-	"fmt"
 	"reflect"
 	"strconv"
 	"sync"
@@ -12,9 +11,11 @@ const (
 	identifier = "Id"
 )
 
+var ErrItemNotFound = errors.New("item not found")
+
 type Manager struct {
 	Add      func(item interface{}, collection string) string
-	FindAll  func(collection string) ([]interface{}, error)
+	FindAll  func(collection string) []interface{}
 	FindById func(id string, collection string) (interface{}, error)
 	FindBy   func(field, value, collection string) (interface{}, error)
 	Update   func(id string, item interface{}, collection string) error
@@ -39,13 +40,13 @@ func Create() Manager {
 	}
 }
 
-func getAll(db map[string]col) func(string) ([]interface{}, error) {
-	return func(collection string) ([]interface{}, error) {
+func getAll(db map[string]col) func(string) []interface{} {
+	return func(collection string) []interface{} {
 		c, ok := db[collection]
 		if !ok {
-			return nil, errors.New(fmt.Sprintf("Collection %s doesn't exist", collection))
+			return make([]interface{}, 0)
 		}
-		return c.items, nil
+		return c.items
 	}
 }
 
@@ -118,10 +119,7 @@ func findBy(db map[string]col) func(string, string, string) (interface{}, error)
 }
 
 func find(db map[string]col, field, value, collection string) (interface{}, int, error) {
-	items, err := getAll(db)(collection)
-	if err != nil {
-		return nil, 0, err
-	}
+	items := getAll(db)(collection)
 
 	for i, v := range items {
 		if reflect.ValueOf(v).Elem().FieldByName(field).String() == value {
@@ -129,7 +127,7 @@ func find(db map[string]col, field, value, collection string) (interface{}, int,
 		}
 	}
 
-	return nil, 0, errors.New(fmt.Sprintf("No Item Found With %s %s", field, value))
+	return nil, 0, ErrItemNotFound
 }
 
 func checkIdField(item interface{}) {

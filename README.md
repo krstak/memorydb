@@ -10,7 +10,7 @@ go get -u github.com/krstak/memorydb
 
 ```go
 Add      func(item interface{}, collection string) string
-FindAll  func(collection string) ([]interface{}, error)
+FindAll  func(collection string) []interface{}
 FindById func(id string, collection string) (interface{}, error)
 FindBy   func(field, value, collection string) (interface{}, error)
 Update   func(id string, item interface{}, collection string) error
@@ -45,7 +45,7 @@ id := db.Add(&memBook, "books")
 ### Find all
 Important: slice of interface{} is returned
 ```go
-books, err := db.FindAll("books")
+books := db.FindAll("books")
 bk := books[0].(*book)
 ```
 

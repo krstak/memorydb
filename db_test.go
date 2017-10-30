@@ -39,9 +39,8 @@ func TestAddConcurrency(t *testing.T) {
 	}
 	w.Wait()
 
-	res, err := db.FindAll("users")
+	res := db.FindAll("users")
 
-	testify.Nil(t)(err)
 	testify.Equal(t)(userNum, len(res))
 
 	// there must not be duplicated IDs
@@ -81,10 +80,9 @@ func TestRemove(t *testing.T) {
 
 	db.Remove(id1, coll)
 
-	res, err := db.FindAll(coll)
+	res := db.FindAll(coll)
 	actUser := *(res[0].(*testUser))
 
-	testify.Nil(t)(err)
 	testify.Equal(t)(1, len(res))
 	testify.Equal(t)(id2, actUser.Id)
 	testify.Equal(t)("Lucy", actUser.Name)
