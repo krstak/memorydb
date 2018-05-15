@@ -1,24 +1,43 @@
 package memorydb
 
 import (
-	"github.com/krstak/testify"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/krstak/testify"
 )
 
-func TestAdd(t *testing.T) {
+func TestAddAndFindById(t *testing.T) {
 	db := Create()
+	db.Identifier("ID")
 
-	user := testUser{Age: 15}
-
+	// ******** str *********
+	user := testUserStr{Age: 15}
 	id := db.Add(&user, "users")
-
 	res, err := db.FindById(id, "users")
-	actUser := *(res.(*testUser))
+	actUser := *(res.(*testUserStr))
 
 	testify.Nil(t)(err)
 	testify.Equal(t)(user, actUser)
+
+	// ******** int *********
+	userInt := testUserInt{Age: 15}
+	idInt := db.Add(&userInt, "users")
+	resInt, err := db.FindById(idInt, "users")
+	actUserInt := *(resInt.(*testUserInt))
+
+	testify.Nil(t)(err)
+	testify.Equal(t)(userInt, actUserInt)
+
+	// ******** uint *********
+	userUint := testUserUint{Age: 15}
+	idUint := db.Add(&userUint, "users")
+	resUint, err := db.FindById(idUint, "users")
+	actUserUint := *(resUint.(*testUserUint))
+
+	testify.Nil(t)(err)
+	testify.Equal(t)(userUint, actUserUint)
 }
 
 func TestAddConcurrency(t *testing.T) {
@@ -53,19 +72,59 @@ func TestAddConcurrency(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	db := Create()
+	db.Identifier("ID")
 
-	user := testUser{Age: 15, Name: "John"}
+	// ******* int *******
+
+	user := testUserInt{Age: 15, Name: "John"}
 	id := db.Add(&user, "users")
-
-	userUpdate := testUser{Age: 20, Name: "John"}
+	userUpdate := testUserInt{Age: 20, Name: "John"}
 	db.Update(id, &userUpdate, "users")
 
 	res, err := db.FindById(id, "users")
-	actUser := *(res.(*testUser))
-
+	actUser := *(res.(*testUserInt))
 	testify.Nil(t)(err)
 	testify.Equal(t)(20, actUser.Age)
 	testify.Equal(t)("John", actUser.Name)
+
+	// ******* int16 *******
+
+	user16 := testUserInt16{Age: 15, Name: "John"}
+	id16 := db.Add(&user16, "users")
+	userUpdate16 := testUserInt16{Age: 20, Name: "John"}
+	db.Update(id16, &userUpdate16, "users")
+
+	res16, err := db.FindById(id16, "users")
+	actUser16 := *(res16.(*testUserInt16))
+	testify.Nil(t)(err)
+	testify.Equal(t)(20, actUser16.Age)
+	testify.Equal(t)("John", actUser16.Name)
+
+	// ******* uint32 *******
+
+	user32 := testUserUint32{Age: 15, Name: "John"}
+	id32 := db.Add(&user32, "users")
+	userUpdate32 := testUserUint32{Age: 20, Name: "John"}
+	db.Update(id32, &userUpdate32, "users")
+
+	res32, err := db.FindById(id32, "users")
+	actUser32 := *(res32.(*testUserUint32))
+	testify.Nil(t)(err)
+	testify.Equal(t)(20, actUser32.Age)
+	testify.Equal(t)("John", actUser32.Name)
+
+	// ******* string *******
+
+	userStr := testUserStr{Age: 15, Name: "John"}
+	idStr := db.Add(&userStr, "users")
+	userUpdateStr := testUserStr{Age: 20, Name: "John"}
+	db.Update(idStr, &userUpdateStr, "users")
+
+	resStr, err := db.FindById(idStr, "users")
+	actUserStr := *(resStr.(*testUserStr))
+	testify.Nil(t)(err)
+	testify.Equal(t)(20, actUserStr.Age)
+	testify.Equal(t)("John", actUserStr.Name)
 }
 
 func TestRemove(t *testing.T) {
@@ -109,6 +168,42 @@ func TestFindBy(t *testing.T) {
 
 type testUser struct {
 	Id   string
+	Age  int
+	Name string
+}
+
+type testUserUint struct {
+	ID   string
+	Age  int
+	Name string
+}
+
+type testUserStr struct {
+	ID   string
+	Age  int
+	Name string
+}
+
+type testUserInt struct {
+	ID   int
+	Age  int
+	Name string
+}
+
+type testUserInt8 struct {
+	ID   int8
+	Age  int
+	Name string
+}
+
+type testUserInt16 struct {
+	ID   int16
+	Age  int
+	Name string
+}
+
+type testUserUint32 struct {
+	ID   uint32
 	Age  int
 	Name string
 }
