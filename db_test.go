@@ -1,169 +1,278 @@
 package memorydb
 
 import (
-	"sync"
 	"testing"
-	"time"
 
+	"github.com/google/uuid"
 	"github.com/krstak/testify"
 )
 
+func TestAddAndFindAll(t *testing.T) {
+	db := New()
+	user1 := newuser(34, "John")
+	user2 := newuser(22, "Merry")
+
+	db.Add("users", user1)
+	db.Add("users", user2)
+
+	var users = []testuser{}
+	db.FindAll("users", &users)
+
+	testify.Equal(t)(2, len(users))
+	testify.Equal(t)(user1.Id, users[0].Id)
+	testify.Equal(t)(user1.Age, users[0].Age)
+	testify.Equal(t)(user1.Name, users[0].Name)
+	testify.Equal(t)(user2.Id, users[1].Id)
+	testify.Equal(t)(user2.Age, users[1].Age)
+	testify.Equal(t)(user2.Name, users[1].Name)
+}
+
 func TestAddAndFindById(t *testing.T) {
-	db := Create()
+	db := New()
+	user1 := newuser(34, "John")
+	user2 := newuser(22, "Merry")
+	user3 := newuser(67, "Jo")
+
+	db.Add("users", user1)
+	db.Add("users", user2)
+	db.Add("users", user3)
+
+	user := testuser{}
+	db.FindById("users", user2.Id, &user)
+
+	testify.Equal(t)(user2, user)
+}
+
+func TestAddAndFindByCustomId(t *testing.T) {
+	db := New()
 	db.Identifier("ID")
+	user1 := newuser(34, "John")
+	user2 := newuser(22, "Merry")
+	user3 := newuser(67, "Jo")
 
-	// ******** str *********
-	user := testUserStr{Age: 15}
-	id := db.Add(&user, "users")
-	res, err := db.FindById(id, "users")
-	actUser := *(res.(*testUserStr))
+	db.Add("users", user1)
+	db.Add("users", user2)
+	db.Add("users", user3)
 
-	testify.Nil(t)(err)
-	testify.Equal(t)(user, actUser)
+	user := testuser{}
+	db.FindById("users", user2.ID, &user)
 
-	// ******** int *********
-	userInt := testUserInt{Age: 15}
-	idInt := db.Add(&userInt, "users")
-	resInt, err := db.FindById(idInt, "users")
-	actUserInt := *(resInt.(*testUserInt))
-
-	testify.Nil(t)(err)
-	testify.Equal(t)(userInt, actUserInt)
-
-	// ******** uint *********
-	userUint := testUserUint{Age: 15}
-	idUint := db.Add(&userUint, "users")
-	resUint, err := db.FindById(idUint, "users")
-	actUserUint := *(resUint.(*testUserUint))
-
-	testify.Nil(t)(err)
-	testify.Equal(t)(userUint, actUserUint)
-}
-
-func TestAddConcurrency(t *testing.T) {
-	db := Create()
-	var w sync.WaitGroup
-
-	v := func() {
-		user := testUser{Age: 10}
-		db.Add(&user, "users")
-		time.Sleep(1 * time.Millisecond)
-		w.Done()
-	}
-
-	userNum := 1000
-	w.Add(userNum)
-	for i := 0; i < userNum; i++ {
-		go v()
-	}
-	w.Wait()
-
-	res := db.FindAll("users")
-
-	testify.Equal(t)(userNum, len(res))
-
-	// there must not be duplicated IDs
-	mp := make(map[string]int)
-	for i := 0; i < len(res); i++ {
-		mp[(res[i]).(*testUser).Id]++
-		testify.Equal(t)(1, mp[(res[i]).(*testUser).Id])
-	}
-}
-
-func TestUpdate(t *testing.T) {
-	db := Create()
-	db.Identifier("ID")
-
-	// ******* int *******
-
-	user := testUserInt{Age: 15, Name: "John"}
-	id := db.Add(&user, "users")
-	userUpdate := testUserInt{Age: 20, Name: "John"}
-	db.Update(id, &userUpdate, "users")
-
-	res, err := db.FindById(id, "users")
-	actUser := *(res.(*testUserInt))
-	testify.Nil(t)(err)
-	testify.Equal(t)(20, actUser.Age)
-	testify.Equal(t)("John", actUser.Name)
-
-	// ******* int16 *******
-
-	user16 := testUserInt16{Age: 15, Name: "John"}
-	id16 := db.Add(&user16, "users")
-	userUpdate16 := testUserInt16{Age: 20, Name: "John"}
-	db.Update(id16, &userUpdate16, "users")
-
-	res16, err := db.FindById(id16, "users")
-	actUser16 := *(res16.(*testUserInt16))
-	testify.Nil(t)(err)
-	testify.Equal(t)(20, actUser16.Age)
-	testify.Equal(t)("John", actUser16.Name)
-
-	// ******* uint32 *******
-
-	user32 := testUserUint32{Age: 15, Name: "John"}
-	id32 := db.Add(&user32, "users")
-	userUpdate32 := testUserUint32{Age: 20, Name: "John"}
-	db.Update(id32, &userUpdate32, "users")
-
-	res32, err := db.FindById(id32, "users")
-	actUser32 := *(res32.(*testUserUint32))
-	testify.Nil(t)(err)
-	testify.Equal(t)(20, actUser32.Age)
-	testify.Equal(t)("John", actUser32.Name)
-
-	// ******* string *******
-
-	userStr := testUserStr{Age: 15, Name: "John"}
-	idStr := db.Add(&userStr, "users")
-	userUpdateStr := testUserStr{Age: 20, Name: "John"}
-	db.Update(idStr, &userUpdateStr, "users")
-
-	resStr, err := db.FindById(idStr, "users")
-	actUserStr := *(resStr.(*testUserStr))
-	testify.Nil(t)(err)
-	testify.Equal(t)(20, actUserStr.Age)
-	testify.Equal(t)("John", actUserStr.Name)
-}
-
-func TestRemove(t *testing.T) {
-	db := Create()
-	coll := "users"
-
-	user1 := testUser{Age: 15, Name: "John"}
-	id1 := db.Add(&user1, "users")
-
-	user2 := testUser{Age: 17, Name: "Lucy"}
-	id2 := db.Add(&user2, coll)
-
-	db.Remove(id1, coll)
-
-	res := db.FindAll(coll)
-	actUser := *(res[0].(*testUser))
-
-	testify.Equal(t)(1, len(res))
-	testify.Equal(t)(id2, actUser.Id)
-	testify.Equal(t)("Lucy", actUser.Name)
-	testify.Equal(t)(17, actUser.Age)
+	testify.Equal(t)(user2, user)
 }
 
 func TestFindBy(t *testing.T) {
-	db := Create()
-	coll := "users"
+	db := New()
+	db.Identifier("ID")
+	user1 := newuser(34, "John")
+	user2 := newuser(22, "Merry")
+	user3 := newuser(67, "Jo")
+	user4 := newuser(22, "Sofia")
 
-	user1 := testUser{Age: 15, Name: "John"}
-	db.Add(&user1, "users")
+	db.Add("users", user1)
+	db.Add("users", user2)
+	db.Add("users", user3)
+	db.Add("users", user4)
 
-	user2 := testUser{Age: 17, Name: "Lucy"}
-	db.Add(&user2, coll)
+	users := []testuser{}
+	db.FindBy("users", "Age", 22, &users)
 
-	res, err := db.FindBy("Name", "John", coll)
-	actUser := *(res.(*testUser))
+	testify.Equal(t)(2, len(users))
+	testify.Equal(t)(user2.Id, users[0].Id)
+	testify.Equal(t)(user4.Id, users[1].Id)
+}
 
-	testify.Nil(t)(err)
-	testify.Equal(t)("John", actUser.Name)
-	testify.Equal(t)(15, actUser.Age)
+func TestRemove(t *testing.T) {
+	db := New()
+	user1 := newuser(34, "John")
+	user2 := newuser(22, "Merry")
+	user3 := newuser(67, "Jo")
+
+	db.Add("users", user1)
+	db.Add("users", user2)
+	db.Add("users", user3)
+
+	db.Remove("users", user2.Id)
+
+	var users = []testuser{}
+	db.FindAll("users", &users)
+
+	testify.Equal(t)(2, len(users))
+	testify.Equal(t)(user1.Id, users[0].Id)
+	testify.Equal(t)(user3.Id, users[1].Id)
+}
+
+// func TestAddAndFindById(t *testing.T) {
+// 	db := Create()
+// 	db.Identifier("ID")
+
+// 	// ******** str *********
+// 	user := testUserStr{Age: 15}
+// 	id := db.Add(&user, "users")
+// 	res, err := db.FindById(id, "users")
+// 	actUser := *(res.(*testUserStr))
+
+// 	testify.Nil(t)(err)
+// 	testify.Equal(t)(user, actUser)
+
+// 	// ******** int *********
+// 	userInt := testUserInt{Age: 15}
+// 	idInt := db.Add(&userInt, "users")
+// 	resInt, err := db.FindById(idInt, "users")
+// 	actUserInt := *(resInt.(*testUserInt))
+
+// 	testify.Nil(t)(err)
+// 	testify.Equal(t)(userInt, actUserInt)
+
+// 	// ******** uint *********
+// 	userUint := testUserUint{Age: 15}
+// 	idUint := db.Add(&userUint, "users")
+// 	resUint, err := db.FindById(idUint, "users")
+// 	actUserUint := *(resUint.(*testUserUint))
+
+// 	testify.Nil(t)(err)
+// 	testify.Equal(t)(userUint, actUserUint)
+// }
+
+// func TestAddConcurrency(t *testing.T) {
+// 	db := Create()
+// 	var w sync.WaitGroup
+
+// 	v := func() {
+// 		user := testUser{Age: 10}
+// 		db.Add(&user, "users")
+// 		time.Sleep(1 * time.Millisecond)
+// 		w.Done()
+// 	}
+
+// 	userNum := 1000
+// 	w.Add(userNum)
+// 	for i := 0; i < userNum; i++ {
+// 		go v()
+// 	}
+// 	w.Wait()
+
+// 	res := db.FindAll("users")
+
+// 	testify.Equal(t)(userNum, len(res))
+
+// 	// there must not be duplicated IDs
+// 	mp := make(map[string]int)
+// 	for i := 0; i < len(res); i++ {
+// 		mp[(res[i]).(*testUser).Id]++
+// 		testify.Equal(t)(1, mp[(res[i]).(*testUser).Id])
+// 	}
+// }
+
+// func TestUpdate(t *testing.T) {
+// 	db := Create()
+// 	db.Identifier("ID")
+
+// 	// ******* int *******
+
+// 	user := testUserInt{Age: 15, Name: "John"}
+// 	id := db.Add(&user, "users")
+// 	userUpdate := testUserInt{Age: 20, Name: "John"}
+// 	db.Update(id, &userUpdate, "users")
+
+// 	res, err := db.FindById(id, "users")
+// 	actUser := *(res.(*testUserInt))
+// 	testify.Nil(t)(err)
+// 	testify.Equal(t)(20, actUser.Age)
+// 	testify.Equal(t)("John", actUser.Name)
+
+// 	// ******* int16 *******
+
+// 	user16 := testUserInt16{Age: 15, Name: "John"}
+// 	id16 := db.Add(&user16, "users")
+// 	userUpdate16 := testUserInt16{Age: 20, Name: "John"}
+// 	db.Update(id16, &userUpdate16, "users")
+
+// 	res16, err := db.FindById(id16, "users")
+// 	actUser16 := *(res16.(*testUserInt16))
+// 	testify.Nil(t)(err)
+// 	testify.Equal(t)(20, actUser16.Age)
+// 	testify.Equal(t)("John", actUser16.Name)
+
+// 	// ******* uint32 *******
+
+// 	user32 := testUserUint32{Age: 15, Name: "John"}
+// 	id32 := db.Add(&user32, "users")
+// 	userUpdate32 := testUserUint32{Age: 20, Name: "John"}
+// 	db.Update(id32, &userUpdate32, "users")
+
+// 	res32, err := db.FindById(id32, "users")
+// 	actUser32 := *(res32.(*testUserUint32))
+// 	testify.Nil(t)(err)
+// 	testify.Equal(t)(20, actUser32.Age)
+// 	testify.Equal(t)("John", actUser32.Name)
+
+// 	// ******* string *******
+
+// 	userStr := testUserStr{Age: 15, Name: "John"}
+// 	idStr := db.Add(&userStr, "users")
+// 	userUpdateStr := testUserStr{Age: 20, Name: "John"}
+// 	db.Update(idStr, &userUpdateStr, "users")
+
+// 	resStr, err := db.FindById(idStr, "users")
+// 	actUserStr := *(resStr.(*testUserStr))
+// 	testify.Nil(t)(err)
+// 	testify.Equal(t)(20, actUserStr.Age)
+// 	testify.Equal(t)("John", actUserStr.Name)
+// }
+
+// func TestRemove(t *testing.T) {
+// 	db := Create()
+// 	coll := "users"
+
+// 	user1 := testUser{Age: 15, Name: "John"}
+// 	id1 := db.Add(&user1, "users")
+
+// 	user2 := testUser{Age: 17, Name: "Lucy"}
+// 	id2 := db.Add(&user2, coll)
+
+// 	db.Remove(id1, coll)
+
+// 	res := db.FindAll(coll)
+// 	actUser := *(res[0].(*testUser))
+
+// 	testify.Equal(t)(1, len(res))
+// 	testify.Equal(t)(id2, actUser.Id)
+// 	testify.Equal(t)("Lucy", actUser.Name)
+// 	testify.Equal(t)(17, actUser.Age)
+// }
+
+// func TestFindBy(t *testing.T) {
+// 	db := Create()
+// 	coll := "users"
+
+// 	user1 := testUser{Age: 15, Name: "John"}
+// 	db.Add(&user1, "users")
+
+// 	user2 := testUser{Age: 17, Name: "Lucy"}
+// 	db.Add(&user2, coll)
+
+// 	res, err := db.FindBy("Name", "John", coll)
+// 	actUser := *(res.(*testUser))
+
+// 	testify.Nil(t)(err)
+// 	testify.Equal(t)("John", actUser.Name)
+// 	testify.Equal(t)(15, actUser.Age)
+// }
+
+type testuser struct {
+	Id   uuid.UUID
+	ID   uuid.UUID
+	Age  int
+	Name string
+}
+
+func newuser(age int, name string) testuser {
+	return testuser{
+		Id:   uuid.New(),
+		ID:   uuid.New(),
+		Age:  age,
+		Name: name,
+	}
 }
 
 type testUser struct {
