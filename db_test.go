@@ -27,42 +27,8 @@ func TestAddAndFindAll(t *testing.T) {
 	testify.Equal(t)(user2.Name, users[1].Name)
 }
 
-func TestAddAndFindById(t *testing.T) {
-	db := New()
-	user1 := newuser(34, "John")
-	user2 := newuser(22, "Merry")
-	user3 := newuser(67, "Jo")
-
-	db.Add("users", user1)
-	db.Add("users", user2)
-	db.Add("users", user3)
-
-	user := testuser{}
-	db.FindById("users", user2.Id, &user)
-
-	testify.Equal(t)(user2, user)
-}
-
-func TestAddAndFindByCustomId(t *testing.T) {
-	db := New()
-	db.Identifier("ID")
-	user1 := newuser(34, "John")
-	user2 := newuser(22, "Merry")
-	user3 := newuser(67, "Jo")
-
-	db.Add("users", user1)
-	db.Add("users", user2)
-	db.Add("users", user3)
-
-	user := testuser{}
-	db.FindById("users", user2.ID, &user)
-
-	testify.Equal(t)(user2, user)
-}
-
 func TestFindBy(t *testing.T) {
 	db := New()
-	db.Identifier("ID")
 	user1 := newuser(34, "John")
 	user2 := newuser(22, "Merry")
 	user3 := newuser(67, "Jo")
@@ -91,7 +57,7 @@ func TestRemove(t *testing.T) {
 	db.Add("users", user2)
 	db.Add("users", user3)
 
-	db.Remove("users", user2.Id)
+	db.Remove("users", "Id", user2.Id)
 
 	var users = []testuser{}
 	db.FindAll("users", &users)
@@ -103,7 +69,6 @@ func TestRemove(t *testing.T) {
 
 type testuser struct {
 	Id   uuid.UUID
-	ID   uuid.UUID
 	Age  int
 	Name string
 }
@@ -111,7 +76,6 @@ type testuser struct {
 func newuser(age int, name string) testuser {
 	return testuser{
 		Id:   uuid.New(),
-		ID:   uuid.New(),
 		Age:  age,
 		Name: name,
 	}

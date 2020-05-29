@@ -8,11 +8,6 @@ import (
 )
 
 type M interface {
-	// Identifier sets identifier for an entity
-	// Example: Identifier("ID")
-	// Default identifier is "Id"
-	Identifier(key string)
-
 	// Add adds a new item in the collection.
 	// Returns an error if occurs.
 	Add(collection string, item interface{}) error
@@ -21,40 +16,29 @@ type M interface {
 	// Returns an error if occurs.
 	FindAll(collection string, st interface{}) error
 
-	// FindById finds an item in the collection by given id.
-	// It returns true if the item is found, otherwise false.
-	// Returns an error if occurs.
-	FindById(collection string, idval interface{}, st interface{}) (bool, error)
-
 	// FindBy finds an item in the collection by given field and value.
 	// Returns an error if occurs.
 	FindBy(collection string, field string, value interface{}, st interface{}) error
 
-	// Remove removes an item with a given id from the collection
+	// Remove removes an item with by given field and value.
 	// Returns an error if occurs.
-	Remove(collection string, idval interface{}) error
+	Remove(collection string, field string, value interface{}) error
 }
 
 type manager struct {
-	db         map[string]collectionitem
-	syn        sync.RWMutex
-	identifier string
+	db  map[string]collectionitem
+	syn sync.RWMutex
 }
 
 func New() M {
 	return &manager{
-		db:         make(map[string]collectionitem),
-		identifier: "Id",
+		db: make(map[string]collectionitem),
 	}
 }
 
 type collectionitem struct {
 	t     reflect.Type
 	items [][]byte
-}
-
-func (m *manager) Identifier(key string) {
-	m.identifier = key
 }
 
 func (m *manager) Add(collection string, item interface{}) error {
@@ -120,32 +104,7 @@ func (m *manager) find(collection string, field string, value interface{}, st in
 	return nil
 }
 
-func (m *manager) FindById(collection string, idval interface{}, st interface{}) (bool, error) {
-	m.syn.RLock()
-	defer m.syn.RUnlock()
-	collectionItem, ok := m.db[collection]
-
-	if !ok {
-		return false, nil
-	}
-
-	found := false
-	for _, b := range collectionItem.items {
-		err := json.Unmarshal(b, st)
-		if err != nil {
-			return false, err
-		}
-
-		val := valueOf(st, m.identifier)
-		if val == idval {
-			found = true
-			break
-		}
-	}
-	return found, nil
-}
-
-func (m *manager) Remove(collection string, idval interface{}) error {
+func (m *manager) Remove(collection string, field string, value interface{}) error {
 	m.syn.Lock()
 	defer m.syn.Unlock()
 	collectionItem, ok := m.db[collection]
@@ -162,8 +121,8 @@ func (m *manager) Remove(collection string, idval interface{}) error {
 			return err
 		}
 
-		val := valueOf(st.Interface(), m.identifier)
-		if val == idval {
+		val := valueOf(st.Interface(), field)
+		if val == value {
 			indexToRemove = i
 			break
 		}
