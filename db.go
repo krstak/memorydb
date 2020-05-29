@@ -7,14 +7,42 @@ import (
 	"sync"
 )
 
+type M interface {
+	// Identifier sets identifier for an entity
+	// Example: Identifier("ID")
+	// Default identifier is "Id"
+	Identifier(key string)
+
+	// Add adds a new item in the collection.
+	// Returns an error if occurs.
+	Add(collection string, item interface{}) error
+
+	// FindAll finds all items in the collection.
+	// Returns an error if occurs.
+	FindAll(collection string, st interface{}) error
+
+	// FindById finds an item in the collection by given id.
+	// It returns true if the item is found, otherwise false.
+	// Returns an error if occurs.
+	FindById(collection string, idval interface{}, st interface{}) (bool, error)
+
+	// FindBy finds an item in the collection by given field and value.
+	// Returns an error if occurs.
+	FindBy(collection string, field string, value interface{}, st interface{}) error
+
+	// Remove removes an item with a given id from the collection
+	// Returns an error if occurs.
+	Remove(collection string, idval interface{}) error
+}
+
 type manager struct {
 	db         map[string]collectionitem
 	syn        sync.RWMutex
 	identifier string
 }
 
-func New() manager {
-	return manager{
+func New() M {
+	return &manager{
 		db:         make(map[string]collectionitem),
 		identifier: "Id",
 	}
@@ -25,9 +53,6 @@ type collectionitem struct {
 	items [][]byte
 }
 
-// Identifier sets identifier for an entity
-// Example: Identifier("ID")
-// Default identifier is "Id"
 func (m *manager) Identifier(key string) {
 	m.identifier = key
 }
