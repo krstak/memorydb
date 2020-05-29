@@ -1,39 +1,36 @@
 # In-Memory Database
 
-Small in-memory database. It is useful for testing and test environment. Should not be used in production.
+A small in-memory database. It is useful for testing and test environment. Should not be used in production.
 
 ## Install
 
 ```go
-get -u github.com/krstak/memorydb
+go get github.com/krstak/memorydb
 ```
 
 ## API
 
 ```go
-// Add adds new item in the collection.
-// It return new id as interface{} value
-Add func(item interface{}, collection string) interface{}
+// Add adds a new item in the collection.
+// Returns an error if occurs.
+Add(collection string, item interface{}) error
 
 // FindAll finds all items in the collection.
-// It return slice of interface{}
-FindAll func(collection string) []interface{}
+// Returns an error if occurs.
+FindAll(collection string, st interface{}) error
 
 // FindById finds an item in the collection by given id. 
-// It returns item as interface{} and error if item can't be found
-FindById func(id interface{}, collection string) (interface{}, error)
+// It returns true if the item is found, otherwise false.
+// Returns an error if occurs.
+FindById(collection string, idval interface{}, st interface{}) (bool, error)
 
 // FindBy finds an item in the collection by given field and value.
-// It returns item as interface{} and error if item can't be found
-FindBy func(field, value, collection string) (interface{}, error)
+// Returns an error if occurs.
+FindBy(collection string, field string, value interface{}, st interface{}) error
 
-// Update updates an item with given id in the collection.
-// It returns error if item can't be updated
-Update func(id interface{}, item interface{}, collection string) error
-
-// Remove removes an item from the collection.
-// It returns error if item can't be removed
-Remove func(id interface{}, collection string) error
+// Remove removes an item with a given id from the collection
+// Returns an error if occurs.
+Remove(collection string, idval interface{}) error
 ```
 
 ## Usage
@@ -41,13 +38,12 @@ Remove func(id interface{}, collection string) error
 ### Create database
 
 ```go
-db := memorydb.Create()
+db := memorydb.New()
 ```
 
 ### Entity to persist
 
-In order to save some struct in db, it should have a required identifier. Default identifier is `Id`. 
-Possible identifier types are: `int`, `int8`, `int16`, `int32`, `int64`, `uint`, `uint8`, `uint16`, `uint32`, `uint64`, `string`
+In order to save a struct in the db, it should have a required identifier. Default identifier is `Id`.
 Everything else is optional.
 
 ```go
@@ -62,14 +58,14 @@ type book struct {
 ### Custom identifier
 
 ```go
-db := memorydb.Create()
+db := memorydb.New()
 db.Identifier("ID")
 ```
 
 ### Write to database
 
 ```go
-memBook := book{isbn: "1234567", name: "In-Memory DB", author: "Marko Krstic"}
+memBook := book{Id: 12, isbn: "1234567", name: "In-Memory DB", author: "Marko Krstic"}
 id := db.Add(&memBook, "books")
 ```
 

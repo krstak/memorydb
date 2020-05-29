@@ -2,13 +2,10 @@ package memorydb
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 	"sync"
 )
-
-var ErrItemNotFound = errors.New("item not found")
 
 type manager struct {
 	db         map[string]collectionitem
@@ -35,7 +32,7 @@ func (m *manager) Identifier(key string) {
 	m.identifier = key
 }
 
-func (m *manager) Add(collection string, item interface{}) {
+func (m *manager) Add(collection string, item interface{}) error {
 	m.syn.Lock()
 	defer m.syn.Unlock()
 	collectionItem, ok := m.db[collection]
@@ -45,24 +42,28 @@ func (m *manager) Add(collection string, item interface{}) {
 			items: make([][]byte, 0),
 		}
 	}
-	b, _ := json.Marshal(item)
+	b, err := json.Marshal(item)
+	if err != nil {
+		return err
+	}
 
 	collectionItem.items = append(collectionItem.items, b)
 	m.db[collection] = collectionItem
+	return nil
 }
 
-func (m *manager) FindAll(collection string, st interface{}) {
+func (m *manager) FindAll(collection string, st interface{}) error {
 	m.syn.RLock()
 	defer m.syn.RUnlock()
-	m.find(collection, "", "", st, func(field string, value interface{}, s reflect.Value, list reflect.Value) reflect.Value {
+	return m.find(collection, "", "", st, func(field string, value interface{}, s reflect.Value, list reflect.Value) reflect.Value {
 		return reflect.Append(list, s.Elem())
 	})
 }
 
-func (m *manager) FindBy(collection string, field string, value interface{}, st interface{}) {
+func (m *manager) FindBy(collection string, field string, value interface{}, st interface{}) error {
 	m.syn.RLock()
 	defer m.syn.RUnlock()
-	m.find(collection, field, value, st, func(field string, value interface{}, s reflect.Value, list reflect.Value) reflect.Value {
+	return m.find(collection, field, value, st, func(field string, value interface{}, s reflect.Value, list reflect.Value) reflect.Value {
 		val := valueOf(s.Interface(), field)
 		if val == value {
 			list = reflect.Append(list, s.Elem())
@@ -71,37 +72,44 @@ func (m *manager) FindBy(collection string, field string, value interface{}, st 
 	})
 }
 
-func (m *manager) find(collection string, field string, value interface{}, st interface{}, append func(field string, value interface{}, s reflect.Value, list reflect.Value) reflect.Value) {
+func (m *manager) find(collection string, field string, value interface{}, st interface{}, append func(field string, value interface{}, s reflect.Value, list reflect.Value) reflect.Value) error {
 	collectionItem, ok := m.db[collection]
 
 	if !ok {
-		return
+		return nil
 	}
 
 	vp := reflect.ValueOf(st).Elem()
 
 	for _, b := range collectionItem.items {
 		stitem := reflect.New(vp.Type().Elem())
-		json.Unmarshal(b, stitem.Interface())
+		err := json.Unmarshal(b, stitem.Interface())
+		if err != nil {
+			return err
+		}
 
 		vp = append(field, value, stitem, vp)
 	}
 
 	reflect.ValueOf(st).Elem().Set(vp)
+	return nil
 }
 
-func (m *manager) FindById(collection string, idval interface{}, st interface{}) bool {
+func (m *manager) FindById(collection string, idval interface{}, st interface{}) (bool, error) {
 	m.syn.RLock()
 	defer m.syn.RUnlock()
 	collectionItem, ok := m.db[collection]
 
 	if !ok {
-		return false
+		return false, nil
 	}
 
 	found := false
 	for _, b := range collectionItem.items {
-		json.Unmarshal(b, st)
+		err := json.Unmarshal(b, st)
+		if err != nil {
+			return false, err
+		}
 
 		val := valueOf(st, m.identifier)
 		if val == idval {
@@ -109,23 +117,25 @@ func (m *manager) FindById(collection string, idval interface{}, st interface{})
 			break
 		}
 	}
-	return found
+	return found, nil
 }
 
-func (m *manager) Remove(collection string, idval interface{}) {
+func (m *manager) Remove(collection string, idval interface{}) error {
 	m.syn.Lock()
 	defer m.syn.Unlock()
 	collectionItem, ok := m.db[collection]
 
 	if !ok {
-		return
+		return nil
 	}
 
 	indexToRemove := -1
 	for i, b := range collectionItem.items {
 		st := reflect.New(collectionItem.t)
 		err := json.Unmarshal(b, st.Interface())
-		fmt.Println(err)
+		if err != nil {
+			return err
+		}
 
 		val := valueOf(st.Interface(), m.identifier)
 		if val == idval {
@@ -138,6 +148,7 @@ func (m *manager) Remove(collection string, idval interface{}) {
 		collectionItem.items = append(collectionItem.items[:indexToRemove], collectionItem.items[indexToRemove+1:]...)
 		m.db[collection] = collectionItem
 	}
+	return nil
 }
 
 func valueOf(item interface{}, field string) interface{} {
