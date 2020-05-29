@@ -12,13 +12,13 @@ type M interface {
 	// Returns an error if occurs.
 	Add(collection string, item interface{}) error
 
-	// FindAll finds all items in the collection.
+	// FindAll finds all items in the collection and maps them into the items.
 	// Returns an error if occurs.
-	FindAll(collection string, st interface{}) error
+	FindAll(collection string, items interface{}) error
 
-	// FindBy finds an item in the collection by given field and value.
+	// FindBy finds all items in the collection by given field and value and maps them into the items.
 	// Returns an error if occurs.
-	FindBy(collection string, field string, value interface{}, st interface{}) error
+	FindBy(collection string, field string, value interface{}, items interface{}) error
 
 	// Remove removes an item with by given field and value.
 	// Returns an error if occurs.
