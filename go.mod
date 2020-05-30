@@ -1,4 +1,4 @@
-module github.com/krstak/memorydb
+module github.com/krstak/memorydb/v3
 
 go 1.14
 
