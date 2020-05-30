@@ -5,7 +5,7 @@ A small in-memory database. It is useful for testing and test environment. Shoul
 ## Install
 
 ```go
-go get github.com/krstak/memorydb
+go get github.com/krstak/memorydb/v3
 ```
 
 ## API
