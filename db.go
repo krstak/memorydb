@@ -8,7 +8,7 @@ import (
 )
 
 type M interface {
-	// Add adds a new item in the collection.
+	// Add adds a new item into the given collection.
 	// Returns an error if occurs.
 	Add(collection string, item interface{}) error
 
@@ -20,7 +20,7 @@ type M interface {
 	// Returns an error if occurs.
 	FindBy(collection string, field string, value interface{}, items interface{}) error
 
-	// Remove removes an item with by given field and value.
+	// Remove removes an item with a given field and value.
 	// Returns an error if occurs.
 	Remove(collection string, field string, value interface{}) error
 }

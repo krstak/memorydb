@@ -11,29 +11,37 @@ go get github.com/krstak/memorydb
 ## API
 
 ```go
-// Add adds a new item in the collection.
+// Add adds a new item into the given collection.
 // Returns an error if occurs.
 Add(collection string, item interface{}) error
 
-// FindAll finds all items in the collection.
+// FindAll finds all items in the collection and maps them into the items.
 // Returns an error if occurs.
 FindAll(collection string, st interface{}) error
 
-// FindById finds an item in the collection by given id. 
-// It returns true if the item is found, otherwise false.
-// Returns an error if occurs.
-FindById(collection string, idval interface{}, st interface{}) (bool, error)
-
-// FindBy finds an item in the collection by given field and value.
+// FindBy finds all items in the collection by given field and value and maps them into the items.
 // Returns an error if occurs.
 FindBy(collection string, field string, value interface{}, st interface{}) error
 
-// Remove removes an item with a given id from the collection
+// Remove removes an item with a given field and value.
 // Returns an error if occurs.
 Remove(collection string, idval interface{}) error
 ```
 
 ## Usage
+
+### Entity to persist
+
+Any struct is a valid object to be persisted.
+
+```go
+type book struct {
+	ID     uuid.UUID
+	Isbn   int
+	Name   string
+	Author string
+}
+```
 
 ### Create database
 
@@ -41,64 +49,29 @@ Remove(collection string, idval interface{}) error
 db := memorydb.New()
 ```
 
-### Entity to persist
-
-In order to save a struct in the db, it should have a required identifier. Default identifier is `Id`.
-Everything else is optional.
-
-```go
-type book struct {
-	Id     string
-	isbn   string
-	name   string
-	author string
-}
-```
-
-### Custom identifier
-
-```go
-db := memorydb.New()
-db.Identifier("ID")
-```
-
 ### Write to database
 
 ```go
-memBook := book{Id: 12, isbn: "1234567", name: "In-Memory DB", author: "Marko Krstic"}
-id := db.Add(&memBook, "books")
+bk := book{ID: uuid.New(), Isbn: 123456, Name: "In-Memory DB", Author: "Marko Krstic"}
+err := db.Add("books", bk)
 ```
 
 ### Find all
 
 ```go
-books := db.FindAll("books")
-bk := books[0].(*book)
+var books []book
+err := db.FindAll("books", &books)
 ```
 
-### Find by Id
+### Find by
 
 ```go
-bk, err := db.FindById(id, "books")
-b := bk.(*book)
-```
-
-### Find by custom field
-
-```go
-bk, err := db.FindBy("isbn", "1234567", "books")
-b := bk.(*book)
-```
-
-### Update
-
-```go
-bk := book{isbn: "222", name: "In-Memory DB", author: "Marko Krstic"}
-err := db.Update(id, &bk, "books")
+var books []book
+err := db.FindBy("books", "Isbn", 123456, &books)
 ```
 
 ### Remove
 
 ```go
-err := db.Remove(id, "books")
+err := db.Remove("books", "Isbn", 123456)
 ```
