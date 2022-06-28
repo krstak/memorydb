@@ -15,6 +15,10 @@ go get github.com/krstak/memorydb/v3
 // Returns an error if occurs.
 Add(collection string, item interface{}) error
 
+// Add updates an existing item into the given collection.
+// Returns an error if occurs.
+Update(collection string, item interface{}, fields []Fileds) error
+
 // FindAll finds all items in the collection and maps them into the items.
 // Returns an error if occurs.
 FindAll(collection string, items interface{}) error
@@ -54,6 +58,13 @@ db := memorydb.New()
 ```go
 bk := book{ID: uuid.New(), Isbn: 123456, Name: "In-Memory DB", Author: "Marko Krstic"}
 err := db.Add("books", bk)
+```
+
+### Update
+
+```go
+bk := book{...}
+err := db.Update("books", bk, []Fileds{{Key: "ID", Value: 123456}})
 ```
 
 ### Find all

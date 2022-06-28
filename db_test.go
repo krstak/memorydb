@@ -67,6 +67,37 @@ func TestRemove(t *testing.T) {
 	testify.Equal(t)(user3.Id, users[1].Id)
 }
 
+func TestUpdate(t *testing.T) {
+	db := New()
+	user1 := newuser(34, "John")
+	user2 := newuser(22, "John")
+	user3 := newuser(67, "Jo")
+	user4 := newuser(21, "Sofia")
+
+	db.Add("users", user1)
+	db.Add("users", user2)
+	db.Add("users", user3)
+	db.Add("users", user4)
+
+	user2.Name = "Johnny"
+	err := db.Update("users", user2, []Fileds{{Key: "Name", Value: "John"}, {Key: "Age", Value: 22}})
+	testify.Nil(t)(err)
+
+	users := []testuser{}
+	db.FindBy("users", "Age", 22, &users)
+
+	testify.Equal(t)(1, len(users))
+	testify.Equal(t)(user2.Id, users[0].Id)
+	testify.Equal(t)(user2.Name, "Johnny")
+
+	users = []testuser{}
+	db.FindBy("users", "Age", 34, &users)
+
+	testify.Equal(t)(1, len(users))
+	testify.Equal(t)(user1.Id, users[0].Id)
+	testify.Equal(t)(user1.Name, "John")
+}
+
 type testuser struct {
 	Id   uuid.UUID
 	Age  int

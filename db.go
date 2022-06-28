@@ -12,6 +12,10 @@ type M interface {
 	// Returns an error if occurs.
 	Add(collection string, item interface{}) error
 
+	// Add updates an existing item into the given collection.
+	// Returns an error if occurs.
+	Update(collection string, item interface{}, fields []Fileds) error
+
 	// FindAll finds all items in the collection and maps them into the items.
 	// Returns an error if occurs.
 	FindAll(collection string, items interface{}) error
@@ -36,6 +40,11 @@ func New() M {
 	}
 }
 
+type Fileds struct {
+	Key   string
+	Value interface{}
+}
+
 type collectionitem struct {
 	t     reflect.Type
 	items [][]byte
@@ -44,6 +53,10 @@ type collectionitem struct {
 func (m *manager) Add(collection string, item interface{}) error {
 	m.syn.Lock()
 	defer m.syn.Unlock()
+	return m.add(collection, item)
+}
+
+func (m *manager) add(collection string, item interface{}) error {
 	collectionItem, ok := m.db[collection]
 	if !ok {
 		collectionItem = collectionitem{
@@ -59,6 +72,45 @@ func (m *manager) Add(collection string, item interface{}) error {
 	collectionItem.items = append(collectionItem.items, b)
 	m.db[collection] = collectionItem
 	return nil
+}
+
+func (m *manager) Update(collection string, item interface{}, fields []Fileds) error {
+	m.syn.Lock()
+	defer m.syn.Unlock()
+	collectionItem, ok := m.db[collection]
+
+	if !ok {
+		return nil
+	}
+
+	indexToRemove := -1
+	for i, b := range collectionItem.items {
+		st := reflect.New(collectionItem.t)
+		err := json.Unmarshal(b, st.Interface())
+		if err != nil {
+			return err
+		}
+
+		found := 0
+		for _, f := range fields {
+			val := valueOf(st.Interface(), f.Key)
+			if val == f.Value {
+				found += 1
+			}
+		}
+
+		if found == len(fields) {
+			indexToRemove = i
+			break
+		}
+	}
+
+	if indexToRemove >= 0 {
+		collectionItem.items = append(collectionItem.items[:indexToRemove], collectionItem.items[indexToRemove+1:]...)
+		m.db[collection] = collectionItem
+	}
+
+	return m.add(collection, item)
 }
 
 func (m *manager) FindAll(collection string, st interface{}) error {
