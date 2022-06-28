@@ -2,6 +2,7 @@ package memorydb
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"sync"
@@ -80,7 +81,7 @@ func (m *manager) Update(collection string, item interface{}, fields []Fileds) e
 	collectionItem, ok := m.db[collection]
 
 	if !ok {
-		return nil
+		return ErrCollectionNotExists
 	}
 
 	indexToRemove := -1
@@ -108,9 +109,10 @@ func (m *manager) Update(collection string, item interface{}, fields []Fileds) e
 	if indexToRemove >= 0 {
 		collectionItem.items = append(collectionItem.items[:indexToRemove], collectionItem.items[indexToRemove+1:]...)
 		m.db[collection] = collectionItem
+		return m.add(collection, item)
 	}
 
-	return m.add(collection, item)
+	return ErrNoRowsUpdated
 }
 
 func (m *manager) FindAll(collection string, st interface{}) error {
@@ -201,3 +203,6 @@ func checkType(item interface{}, field string) reflect.Type {
 
 	return t.Type
 }
+
+var ErrNoRowsUpdated = errors.New("No rows updated")
+var ErrCollectionNotExists = errors.New("Collection does not exist")
